@@ -1,0 +1,41 @@
+#!/usr/bin/env bpftrace
+/*
+ * audit_mmap.bt - auditoria complementaria con eBPF (sin recompilar el kernel).
+ * Uso: sudo bpftrace tools/audit_mmap.bt
+ * Requiere: sudo dnf install bpftrace  (Fedora trae BTF del kernel activado)
+ *
+ * 1) Registra todo mapeo ESCRIBIBLE de un archivo (prot & PROT_WRITE = 2).
+ * 2) Cuenta mapeos por proceso/segundo para ver rafagas anomalas.
+ * 3) Registra mprotect() que agregan PROT_WRITE sobre VMAs de archivo.
+ */
+kprobe:security_mmap_file
+/arg0 != 0/
+{
+	@rate[pid, comm] = count();
+}
+
+kprobe:security_mmap_file
+/arg0 != 0 && (arg1 & 2)/
+{
+	$f = (struct file *)arg0;
+	printf("W-MAP   comm=%-14s pid=%-6d uid=%-5d file=%s prot=%d flags=0x%x\n",
+	       comm, pid, uid, str($f->f_path.dentry->d_name.name), arg1, arg2);
+}
+
+kprobe:security_file_mprotect
+/(arg2 & 2)/
+{
+	$vma = (struct vm_area_struct *)arg0;
+	if ($vma->vm_file != 0) {
+		printf("W-PROT  comm=%-14s pid=%-6d uid=%-5d file=%s newprot=%d\n",
+		       comm, pid, uid, str($vma->vm_file->f_path.dentry->d_name.name), arg2);
+	}
+}
+
+interval:s:1
+{
+	print(@rate);
+	clear(@rate);
+}
+
+END { clear(@rate); }
