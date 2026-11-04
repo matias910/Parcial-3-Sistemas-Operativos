@@ -1,0 +1,3 @@
+obj-m := mmapguard.o
+mmapguard-y := mg_main.o mg_policy.o mg_hooks.o mg_proc.o
+ccflags-y := -Wall
