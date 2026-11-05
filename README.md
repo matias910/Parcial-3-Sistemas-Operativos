@@ -12,6 +12,7 @@
 ![build](https://img.shields.io/badge/build-sin%20warnings-brightgreen)
 
 Universidad EAFIT · Sistemas Operativos 2026-2 · Parcial práctico-teórico · Equipo de 3
+- Samuel Valencia Montoya - Matías Zapata Rojas - Valentina Barbosa
 
 </div>
 
